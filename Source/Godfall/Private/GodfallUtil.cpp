@@ -76,9 +76,7 @@ FVector2D GodfallUtil::Vector2D::Parabola(const FParabolaCoefficient2& coefficie
 	const double& A = coefficient.A;
 	const double& B = coefficient.B;
 	const double& C = coefficient.C;
-
 	double y = C * (x - A) * (x - A) + B;
-
 	return FVector2D(x, y);
 }
 
@@ -138,16 +136,6 @@ FVector2D GodfallUtil::Vector2D::EndPointInRect(float halfWidth, float halfHegit
 	else
 	{
 		return FVector2D::ZeroVector;
-	}
-}
-
-template <typename T>
-void GodfallUtil::Sort::Mix(T& container, uint32 num)
-{
-	for (uint32 i = 0; i < num; ++i)
-	{
-		uint32 randIndex = FMath::Rand() % num;
-		std::swap(container[i], container[randIndex]);
 	}
 }
 

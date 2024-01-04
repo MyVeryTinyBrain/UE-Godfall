@@ -331,11 +331,9 @@ void UGodfallAnimInstanceBase::AnimNotifyState_Exitable(EAnimNotifyStateEvent eE
 	switch (eEvent)
 	{
 		case EAnimNotifyStateEvent::Begin:
-			//mExitable = true;
 			++mExitable;
 			break;
 		case EAnimNotifyStateEvent::End:
-			//mExitable = false;
 			--mExitable;
 			break;
 	}

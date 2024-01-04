@@ -44,7 +44,6 @@ void UBTService_FindActor::FindActor(UBehaviorTreeComponent& OwnerComp)
 {
 	UBlackboardComponent* blackboardComp = OwnerComp.GetBlackboardComponent();
 	AActor* actor = nullptr;
-
 	switch (mFindType)
 	{
 		case EServiceFindActorType::Player:
@@ -58,24 +57,24 @@ void UBTService_FindActor::FindActor(UBehaviorTreeComponent& OwnerComp)
 		}
 		break;
 	}
-
 	blackboardComp->SetValueAsObject(mTargetActorKey.SelectedKeyName, actor);
 }
 
 bool UBTService_FindActor::IsFindableActor(const AActor* ownerActor, const AActor* otherActor) const
 {
+	// 비교하는 액터가 범위 내에 존재하는지 검사
 	if (mUseRadius)
 	{
 		if (FVector::Distance(ownerActor->GetActorLocation(), otherActor->GetActorLocation()) > mRadius) return false;
 	}
-	
+	// 비교하는 액터가 지정한 각도의 시야각에 존재하는지 검사
 	if (mUseHalfAngle)
 	{
 		FVector ownerForward = ownerActor->GetActorForwardVector();
 		FVector ownerToOther = (otherActor->GetActorLocation() - ownerActor->GetActorLocation()).GetSafeNormal();
 		if (FMath::Cos(FMath::DegreesToRadians(mHalfAngle)) > FVector::DotProduct(ownerForward, ownerToOther)) return false;
 	}
-
+	// 비교하는 액터가 벽에 막혀 있는지 검사
 	if (mUseRaycast)
 	{
 		FHitResult hit;
@@ -88,6 +87,5 @@ bool UBTService_FindActor::IsFindableActor(const AActor* ownerActor, const AActo
 
 		if (raycastResult) return false;
 	}
-
 	return true;
 }

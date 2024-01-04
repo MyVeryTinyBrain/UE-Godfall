@@ -206,18 +206,17 @@ bool UEnemyMoveComponent::GetNextLocation(FVector& nextLocation, bool* isPartial
 			mEnemy
 		);
 	}
-
+	// 목표로 향하는 경로까지 서로 떨어진 네비메쉬를 거쳐야 하는 경우(이동 불가)
 	if (isPartial)
 	{
 		*isPartial = path ? path->IsPartial() : false;
 	}
-
+	// 다음에 이동해야 하는 위치를 반환
 	if (path && path->PathPoints.Num() > 1)
 	{
 		nextLocation = path->PathPoints[1];
 		return true;
 	}
-
 	return false;
 }
 
@@ -405,7 +404,6 @@ void UEnemyMoveComponent::SetState(EEnemyMoveComponentState state)
 void UEnemyMoveComponent::TickMove()
 {
 	AccumulateMoveDistance();
-
 	FVector nextLocation;
 	FVector nextDirection;
 	bool isPartial;
@@ -413,7 +411,6 @@ void UEnemyMoveComponent::TickMove()
 	{
 		nextDirection = GetActorToTargetXYDirection(nextLocation);
 		SetLookDirection(nextDirection);
-
 		if (isPartial && mStopIfPartialPath)
 		{
 			SetToFailed();
@@ -423,9 +420,9 @@ void UEnemyMoveComponent::TickMove()
 	{
 		SetToFailed();
 	}
-
 	if (mUseWait)
 	{
+		// 정면 진행 방향이 다른 캐릭터에 의해 막힌 경우 Wait 상태로 변경한다.
 		bool blockedByOtherChracter = IsBlockedByOtherCharacter(nextDirection, E4Direction::Forward, mBlockDistance);
 		if (blockedByOtherChracter)
 		{
@@ -437,7 +434,6 @@ void UEnemyMoveComponent::TickMove()
 void UEnemyMoveComponent::TickWait(float deltaTime)
 {
 	mWaitAccumulation += deltaTime;
-	
 	if (mUseAvoid)
 	{
 		if (CanAvoid())
@@ -446,14 +442,12 @@ void UEnemyMoveComponent::TickWait(float deltaTime)
 			return;
 		}
 	}
-
 	FVector nextLocation;
 	FVector nextDirection;
 	if (GetNextLocation(nextLocation))
 	{
-		nextDirection = GetActorToTargetXYDirection(nextLocation);
-		
-		// Wait 상태일 때 쳐다보는 방향을 변경합니다.
+		nextDirection = GetActorToTargetXYDirection(nextLocation);	
+		// Wait 상태일 때 쳐다보는 방향을 변경한다.
 		if (mLookOnWait)
 		{
 			SetLookDirection(nextDirection);
@@ -463,7 +457,6 @@ void UEnemyMoveComponent::TickWait(float deltaTime)
 	{
 		return;
 	}
-
 	bool blockedByOtherChracter = IsBlockedByOtherCharacter(nextDirection, E4Direction::Forward, mBlockDistance);
 	if (!blockedByOtherChracter)
 	{
@@ -501,14 +494,15 @@ bool UEnemyMoveComponent::IsNearWithAvoidTarget() const
 
 void UEnemyMoveComponent::TickAvoid()
 {
-	AccumulateMoveDistance();
+	// 회피하려는 대상과의 거리가 임계값보다 가까운 경우,
+	// Move 상태로 변경하여 다시 회피 방향을 정하거나, 목표로 향하도록 한다.
 
+	AccumulateMoveDistance();
 	if (IsNearWithAvoidTarget())
 	{
 		SetState(EEnemyMoveComponentState::Move);
 		return;
 	}
-
 	FVector nextLocation;
 	FVector nextDirection;
 	if (GetNextAvoidLocation(nextLocation))
@@ -521,7 +515,6 @@ void UEnemyMoveComponent::TickAvoid()
 		SetState(EEnemyMoveComponentState::Move);
 		return;
 	}
-
 	bool blockedByOtherChracter = IsBlockedByOtherCharacterOrStatic(GetOwner()->GetActorForwardVector(), mAvoidDirection, mBlockDistance);
 	if (blockedByOtherChracter)
 	{

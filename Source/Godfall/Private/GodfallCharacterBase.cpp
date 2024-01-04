@@ -170,7 +170,9 @@ void AGodfallCharacterBase::OnHitboxOverlap(
 			otherToThis = FVector::VectorPlaneProject(otherToThis, FVector::UpVector);
 			otherToThis.Normalize();
 			float d = FVector::DotProduct(otherForward, otherToThis);
-			if (d > 0.0f) damagableData.DamageDirection = (damagableData.DamageDirection == EDamageDirection::Left ? EDamageDirection::Right : EDamageDirection::Left);
+			if (d > 0.0f) damagableData.DamageDirection = 
+				damagableData.DamageDirection == EDamageDirection::Left ? 
+				 EDamageDirection::Right : EDamageDirection::Left;
 
 			FDamagableInput damagableInput;
 			damagableInput.Data = damagableData;

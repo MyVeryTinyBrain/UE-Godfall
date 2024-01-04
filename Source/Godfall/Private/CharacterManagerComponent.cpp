@@ -345,7 +345,8 @@ float UCharacterManagerComponent::CalcDistance(const AActor* character, const FC
 	return FLT_MAX;
 }
 
-bool UCharacterManagerComponent::CalcScreenDistance(const AActor* character, const FCharacterManagerScreenQuery* fScreenQuery, float& distance) const
+bool UCharacterManagerComponent::CalcScreenDistance(
+	const AActor* character, const FCharacterManagerScreenQuery* fScreenQuery, float& distance) const
 {
 	bool outOfScreen = true;
 	FVector2D screenLocation;
@@ -368,12 +369,10 @@ bool UCharacterManagerComponent::CalcScreenDistance(const AActor* character, con
 			outOfScreen = false;
 		}
 	}
-
 	if (outOfScreen)
 	{
 		return false;
 	}
-
 	switch (fScreenQuery->DistanceFunction)
 	{
 		case ECharacterManagerQueryScreenDistanceFunction::PointToPoint:
@@ -393,7 +392,6 @@ bool UCharacterManagerComponent::CalcScreenDistance(const AActor* character, con
 			return true;
 		}
 	}
-
 	return false;
 }
 

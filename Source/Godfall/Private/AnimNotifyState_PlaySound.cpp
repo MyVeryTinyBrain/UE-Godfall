@@ -32,7 +32,6 @@ UAnimNotifyState_PlaySound::UAnimNotifyState_PlaySound()
 void UAnimNotifyState_PlaySound::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
-
 	if (Sound && MeshComp)
 	{
 		if (!Sound->IsOneShot())
@@ -40,7 +39,6 @@ void UAnimNotifyState_PlaySound::NotifyBegin(USkeletalMeshComponent* MeshComp, U
 			UE_LOG(LogAudio, Warning, TEXT("PlaySound notify: Anim %s tried to play a sound asset which is not a one-shot: '%s'. Spawning suppressed."), *GetNameSafe(Animation), *GetNameSafe(Sound));
 			return;
 		}
-
 		#if WITH_EDITORONLY_DATA
 		UWorld* World = MeshComp->GetWorld();
 		if (bPreviewIgnoreAttenuation && World && World->WorldType == EWorldType::EditorPreview)
@@ -75,7 +73,6 @@ void UAnimNotifyState_PlaySound::NotifyEnd(USkeletalMeshComponent* MeshComp, UAn
 	if (PreviewAudioComponent.IsValid())
 	{
 		PreviewAudioComponent->FadeOut(InterruptFadeOutTime, InterruptFadeVolumeLevel);
-		//PreviewAudioComponent->Stop();
 		PreviewAudioComponent = nullptr;
 	}
 	#endif
@@ -83,7 +80,6 @@ void UAnimNotifyState_PlaySound::NotifyEnd(USkeletalMeshComponent* MeshComp, UAn
 	if (AudioComponent.IsValid())
 	{
 		AudioComponent->FadeOut(InterruptFadeOutTime, InterruptFadeVolumeLevel);
-		//AudioComponent->Stop();
 		AudioComponent = nullptr;
 	}
 }

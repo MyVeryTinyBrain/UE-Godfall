@@ -379,10 +379,8 @@ bool UAnimInstanceSilvermane::TrySetAttackType(ESilvermaneAttackType type)
 		mAttackType = ESilvermaneAttackType::None;
 		return true;
 	}
-
 	bool playingAttackMontage = IsActiveAttackMontage();
 	bool playingEquipMontage = IsActiveEquipOnMontage() || IsActiveEquipOffMontage();
-
 	if (Montage_IsActive(nullptr))
 	{
 		if (playingAttackMontage)
@@ -392,16 +390,11 @@ bool UAnimInstanceSilvermane::TrySetAttackType(ESilvermaneAttackType type)
 				return false;
 			}
 		}
-		else if (playingEquipMontage)
-		{
-
-		}
 		else if (!IsExitable())
 		{
 			return false;
 		}
 	}
-
 	mAttackType = type;
 	return true;
 }
@@ -577,16 +570,17 @@ void UAnimInstanceSilvermane::SolveExitable()
 {
 	if (IsExitable() && Montage_IsActive(nullptr) && mMoveSpeed != ESilvermaneMoveSpeed::Stop)
 	{
+#pragma region TIME FRACTION CHECK
 		UAnimMontage* currentMontage = GetCurrentActiveMontage();
 		if (!currentMontage) return;
 
 		FName currentSection = Montage_GetCurrentSection(currentMontage);
 		if (currentSection == NAME_None) return;
-		
+
 		float currentTimeFractionInSection = Montage_GetTimeFraction(currentMontage, currentSection);
 		if (currentTimeFractionInSection == 0.0f || currentTimeFractionInSection == 1.0f) return;
 		if (currentTimeFractionInSection < 0.01f) return;
-
+#pragma endregion
 		mAttackType = ESilvermaneAttackType::None;
 		StopAllMontages(0.4f);
 		return;

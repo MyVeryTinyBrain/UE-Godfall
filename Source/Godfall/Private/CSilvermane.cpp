@@ -108,32 +108,32 @@ bool ACSilvermane::IsInvincible() const
 
 EBlockOutput ACSilvermane::CanBlock(const FDamageInput& damageInput) const
 {
+	// 쉴드가 닫히는 중에도 방어가 가능하게 한다.
 	if (!mShield->IsOpen())
 	{
 		float currentTime = GetWorld()->GetTime().GetWorldTimeSeconds();
+		// 마지막으로 방패를 올린 시간과 현재 시간과의 차이
 		if (FMath::Abs(currentTime - mLastGuardTime) > mPerfectBlockLimit)
 		{
 			return EBlockOutput::Fail;
 		}
 	}
-
+	// 스턴 중에는 방어 불가능
 	if (mAnimInstance->IsPlayingStunMontage())
 	{
 		return EBlockOutput::Fail;
 	}
-
 	FVector thisToCauser = (damageInput.CauserActor->GetActorLocation() - GetActorLocation());
 	FVector thisToCauserXY = FVector::VectorPlaneProject(thisToCauser, FVector::UpVector).GetSafeNormal();
 	FVector forwardXY = FVector::VectorPlaneProject(GetActorForwardVector(), FVector::UpVector).GetSafeNormal();
 	float dot = FVector::DotProduct(thisToCauserXY, forwardXY);
-	
 	static const float limitAngle = 90.0f;
 	static const float limitCos = FMath::Cos(FMath::DegreesToRadians(limitAngle));
-
+	// 적을 바라보는 각도가 일정 각도 이내일 때만 방어할 수 있다.
 	if (dot > limitCos)
 	{
-		float delta = GetWorld()->GetTime().GetWorldTimeSeconds() - mLastGuardTime;
-		
+		// 마지막으로 방패를 올린 시간과 현재 시간과의 차이
+		float delta = GetWorld()->GetTime().GetWorldTimeSeconds() - mLastGuardTime;	
 		if (delta < mPerfectBlockLimit)
 		{
 			return EBlockOutput::Blocked_Perfect;
@@ -299,11 +299,10 @@ bool ACSilvermane::TryExecute(AGodfallEnemyBase* targetEnemy)
 {
 	if (!ensure(targetEnemy)) return false;
 
+	// 적의 종류에 따라 다른 처형 애니메이션을 재생한다.
 	if (!mAnimInstance->PlayExecutionMontageWithEnemy(targetEnemy)) return false;
 
-
-
-	//MoveIgnoreActorAdd(enemy);
+#pragma region DISABLE COLLISION
 	AGodfallGameState* gameState = Cast<AGodfallGameState>(GetWorld()->GetGameState());
 	if (ensure(gameState))
 	{
@@ -315,31 +314,19 @@ bool ACSilvermane::TryExecute(AGodfallEnemyBase* targetEnemy)
 		}
 	}
 	targetEnemy->MoveIgnoreActorAdd(this);
+#pragma endregion
 
-
-
-	FVector enemyToSilvermane = (GetActorLocation() - targetEnemy->GetActorLocation());
-	enemyToSilvermane = FVector::VectorPlaneProject(enemyToSilvermane, FVector::UpVector).GetSafeNormal();
-
-	float silvermaneRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
-	float enemyRadius = targetEnemy->GetCapsuleComponent()->GetScaledCapsuleRadius();
-	FVector executionLocation = targetEnemy->GetActorLocation() + enemyToSilvermane * (mExecuteDistance);
-	FRotator silvermaneRotator = FRotationMatrix::MakeFromX(-enemyToSilvermane).Rotator();
-	FRotator enemyRotator = FRotationMatrix::MakeFromX(enemyToSilvermane).Rotator();
-
-	// ##
-	//this->SetActorLocation(executionLocation);
-
+	// 서로를 바라보게 한다.
+	FVector enemyToPlayer = (GetActorLocation() - targetEnemy->GetActorLocation());
+	enemyToPlayer = FVector::VectorPlaneProject(enemyToPlayer, FVector::UpVector).GetSafeNormal();
+	FVector executionLocation = targetEnemy->GetActorLocation() + enemyToPlayer * (mExecuteDistance);
+	FRotator playerRotator = FRotationMatrix::MakeFromX(-enemyToPlayer).Rotator();
+	FRotator enemyRotator = FRotationMatrix::MakeFromX(enemyToPlayer).Rotator();
 	targetEnemy->GetCharacterRotateComponent()->SetRotatorDirect(enemyRotator);
-	this->GetCharacterRotateComponent()->SetRotatorDirect(silvermaneRotator);
-
-
+	this->GetCharacterRotateComponent()->SetRotatorDirect(playerRotator);
 
 	mExecutioningTarget = targetEnemy;
 	OnBeginExecution();
-
-
-
 	return true;
 }
 
@@ -673,18 +660,9 @@ void ACSilvermane::OnBeginExecution()
 
 void ACSilvermane::OnEndExecution(bool interruped)
 {
-	//if (interruped)
-	//{
-	//	SetWeaponSocket(ESilvermaneWeaponSocket::Hand);
-	//}
-	//else if(GetWeaponSocket() == ESilvermaneWeaponSocket::Back)
-	//{
-	//	mAnimInstance->PlayEquipMontage(ESilvermaneEquipTrigger::Equip_On);
-	//}
-
 	if (mExecutioningTarget)
 	{
-		//MoveIgnoreActorRemove(mExecutionTarget);
+#pragma region ENABLE COLLISION
 		AGodfallGameState* gameState = Cast<AGodfallGameState>(GetWorld()->GetGameState());
 		if (ensure(gameState))
 		{
@@ -696,6 +674,7 @@ void ACSilvermane::OnEndExecution(bool interruped)
 			}
 		}
 		mExecutioningTarget->MoveIgnoreActorRemove(this);
+#pragma endregion
 
 		mExecutioningTarget = nullptr;
 	}
@@ -794,18 +773,17 @@ void ACSilvermane::TickForExecuteLocation()
 {
 	if (mExecutioningTarget && mAnimInstance->IsActiveExecutionMontage())
 	{
-		// player root -> utility_01
-		// player root -> enemy root
-
-		FVector silvermaneRoot = GetMesh()->GetBoneLocation(TEXT("root"));
+		FVector playerRoot = GetMesh()->GetBoneLocation(TEXT("root"));
 		FVector utility_01 = GetMesh()->GetBoneLocation(TEXT("utility_01"));
 		FVector enemyRoot = mExecutioningTarget->GetMesh()->GetBoneLocation(TEXT("root"));
 
-		FVector enemyToSilvermane = silvermaneRoot - utility_01;
-		FVector newSilvermaneRootLocation = enemyRoot + enemyToSilvermane;
-		FVector newSilvermaneLocation = newSilvermaneRootLocation + FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-		newSilvermaneLocation.Z = GetActorLocation().Z;
+		FVector enemyToPlayer = playerRoot - utility_01;
+		// 플레이어가 적의 처형용 본 utility_01에 위치하도록 한다.
+		FVector newPlayerRootLocation = enemyRoot + enemyToPlayer;
+		// 발 높이를 더해준다.
+		FVector newPlayerLocation = newPlayerRootLocation + FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+		newPlayerLocation.Z = GetActorLocation().Z;
 
-		SetActorLocation(newSilvermaneLocation);
+		SetActorLocation(newPlayerLocation);
 	}
 }

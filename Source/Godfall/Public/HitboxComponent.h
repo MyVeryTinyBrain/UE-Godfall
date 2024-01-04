@@ -57,6 +57,8 @@ private:
 	TArray<UPrimitiveComponent*> mHitboxes;
 
 	// 등록된 히트박스의 인덱스가 나열되어 있습니다.
+	// 같은 인덱스의 히트박스들은 하나의 히트박스로 취급합니다.
+	// ex) 0번 인덱스의 히트박스A가 히트한 경우 0번 인덱스의 히트박스B가 히트하더라도 이벤트가 발생하지 않습니다.
 	TMap<UPrimitiveComponent*, int> mHitboxIndices;
 
 	// 인덱스로 히트박스들이 분류되어 있습니다.

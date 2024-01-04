@@ -48,48 +48,35 @@ void UBTService_PopState::PopState(UBehaviorTreeComponent& OwnerComp)
 {	
 	UBlackboardComponent* blackboardComp = OwnerComp.GetBlackboardComponent();
 	FStateTable stateTable = blackboardComp->GetValue<UBlackboardKeyType_StateTable>(mStateTableKey.SelectedKeyName);
-
 	TArray<FName> targetStateNames = mTargetStateNames;
+#pragma region SHUFFLE STATE NAMES
 	if (!mUsePriority)
 	{
 		GodfallUtil::Sort::Mix(targetStateNames, targetStateNames.Num());
 	}
-
-	int32 numContains = 0;
-	int32 numSetSucceeded = 0;
+#pragma endregion
+	int32 numContains = 0, numSetSucceeded = 0;
 	for (const auto& name : targetStateNames)
 	{
 		bool containsName;
 		bool setSucceeded = stateTable.TrySetAvailable(name, false, containsName);
 		ensureMsgf(containsName, TEXT("The state name \"%s\" does not exist in the state table."), *name.ToString());
-
-		if (containsName)
-		{
-			++numContains;
-		}
-
-		if (setSucceeded)
-		{
-			++numSetSucceeded;
-		}
-
-		// 상태를 하나 활성화에 성공하면 종료합니다.
+		if (containsName) ++numContains;
+		if (setSucceeded) ++numSetSucceeded;
+		// 하나의 상태 변경에 성공하면 종료합니다.
 		if (containsName && setSucceeded)
 		{
-			uint32 numAvailable = 0;
-			uint32 numStates = 0;
+			uint32 numAvailable = 0, numStates = 0;
 			for (auto& state : stateTable.States)
 			{
 				numAvailable += state.Available ? 1 : 0;
 				++numStates;
 			}
-
 			blackboardComp->SetValue<UBlackboardKeyType_StateTable>(mStateTableKey.SelectedKeyName, stateTable);
 			blackboardComp->SetValueAsName(mPopTargetStateKey.SelectedKeyName, name);
 			return;
 		}
 	}
-
 	// 상태 이름은 유효하나 설정 가능한 모든 상태들이 비활성화 상태이면
 	// 등록한 배열에 존재하는 상태들을 찾아 활성화 시키고 다시 한 번 상태를 뽑습니다.
 	// 이 때 등록하지 않은 상태는 활성화하지 않습니다.
@@ -102,7 +89,6 @@ void UBTService_PopState::PopState(UBehaviorTreeComponent& OwnerComp)
 			stateTable.SetAvailable(name, true, containsName);
 			blackboardComp->SetValue<UBlackboardKeyType_StateTable>(mStateTableKey.SelectedKeyName, stateTable);
 		}
-
 		PopState(OwnerComp);
 	}
 }

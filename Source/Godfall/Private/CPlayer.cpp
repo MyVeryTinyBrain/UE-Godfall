@@ -339,6 +339,7 @@ void ACPlayer::ToggleLockOn()
 		{
 			TArray<const FCharacterManagerQueryFiler*> f3Dfilters;
 
+			// 캐릭터가 벽에 가려져 있는지 검사하기 위한 레이캐스트 설정
 			FCharacterManagerQueryRaycastFiler raycastFilter;
 			raycastFilter.RaystartLocation = mCameraDirector->GetCamera()->GetComponentLocation();
 			raycastFilter.World = GetWorld();
@@ -347,11 +348,14 @@ void ACPlayer::ToggleLockOn()
 
 			FCharacterManagerQueryOption option;
 
+			// 캐릭터와 카메라 사이의 거리를 비교하기 위한 설정
 			FCharacterManager3DQuery f3DQuery;
 			f3DQuery.Point = mCameraDirector->GetCamera()->GetComponentLocation();
 			f3DQuery.Rotation = mCameraDirector->GetCamera()->GetComponentRotation();
 
-			AGodfallCharacterBase* character = gameState->GetCharacterManager()->Query(f3Dfilters, f3DQuery, option, nullptr);
+			// 벽에 가려져 있지 않은 캐릭터 중 화면 중심에서 가장 가까운 캐릭터를 탐색
+			AGodfallCharacterBase* character = 
+				gameState->GetCharacterManager()->Query(f3Dfilters, f3DQuery, option, nullptr);
 			mCameraDirector->mFocusActor = character;		
 		}
 	}
@@ -359,19 +363,20 @@ void ACPlayer::ToggleLockOn()
 
 void ACPlayer::TryChangeLockOnTarget(float deltaTime, const FVector2D& screenDelta)
 {
+#pragma region PRUNING
 	if (mChangeLockOnDelay > 0.0f)
 	{
 		mChangeLockOnDelay -= deltaTime;
 		return;
 	}
-
-	if (screenDelta.Length() < mLimitDeltaLengthToChangeLockOn) return;
-
 	if (!mCameraDirector->mFocusActor.IsValid()) return;
-
+#pragma endregion
+	// 마우스 이동 거리가 한계값보다 작으면 락온 대상을 변경하지 않는다.
+	if (screenDelta.Length() < mLimitDeltaLengthToChangeLockOn) return;
 	AGodfallGameState* gameState = Cast<AGodfallGameState>(GetWorld()->GetGameState());
 	if (ensure(gameState))
 	{
+#pragma region PARAMETER_SETTING
 		TArray<const FCharacterManagerQueryFiler*> f3Dfilters;
 
 		FCharacterManagerQueryDefaultFiler defaultFilter;
@@ -389,7 +394,7 @@ void ACPlayer::TryChangeLockOnTarget(float deltaTime, const FVector2D& screenDel
 		FCharacterManager3DQuery f3DQuery;
 		f3DQuery.Point = mCameraDirector->GetCamera()->GetComponentLocation();
 		f3DQuery.Rotation = mCameraDirector->GetCamera()->GetComponentRotation();
-
+#pragma endregion
 		FCharacterManagerScreenQuery fScreenQuery;
 		fScreenQuery.LineDirection = screenDelta;
 

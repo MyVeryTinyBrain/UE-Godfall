@@ -40,6 +40,10 @@ struct FParabolaCoefficient3
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector P2;
 
+	/*
+	XYDistance = XY 평면에서의 거리
+	*/
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	double P0XYDistance;
 
@@ -88,7 +92,14 @@ namespace GodfallUtil
 	namespace Sort
 	{
 		template<typename T>
-		void Mix(T& container, uint32 num);
+		void Mix(T& container, uint32 num) 
+		{
+			for (uint32 i = 0; i < num; ++i) 
+			{
+				uint32 randIndex = FMath::Rand() % num;
+				std::swap(container[i], container[randIndex]);
+			}
+		}
 	}
 
 	struct FConeShape
