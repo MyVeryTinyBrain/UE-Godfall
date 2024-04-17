@@ -1,3 +1,7 @@
+## Build
+https://drive.google.com/file/d/1Nj7Fw7iEQ0_6uxs3VGJ6G0lOq64XxOTW/view?usp=drive_link  
+실행파일: `Windows/Godfall.exe`
+
 ## How to play
 이동: `W` `A` `S` `D`  
 질주: `Shift`  
