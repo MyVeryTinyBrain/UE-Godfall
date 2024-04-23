@@ -1,5 +1,5 @@
 ## Build
-https://drive.google.com/file/d/1Nj7Fw7iEQ0_6uxs3VGJ6G0lOq64XxOTW/view?usp=drive_link  
+https://drive.google.com/file/d/198vG1SX6i7wZxZ0HsieJmc4D253ZgwIk/view?usp=drive_link  
 실행파일: `Windows/Godfall.exe`
 
 ## How to play
