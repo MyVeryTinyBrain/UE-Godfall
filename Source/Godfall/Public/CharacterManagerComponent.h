@@ -88,14 +88,18 @@ struct FCharacterManagerScreenQuery
 	FVector2D LineDirection; // 정규화되지 않은 값이어도 괜찮습니다.
 };
 
-struct FCharacterManagerQueryFiler
+struct FCharacterManagerQueryFilter
 {
-	virtual ~FCharacterManagerQueryFiler() {}
+	virtual ~FCharacterManagerQueryFilter() {}
+
+	// true를 반환하면 해당 캐릭터는 필터에 통과된 캐릭터입니다.
 	virtual bool Search(const AActor* character) const = 0;
+
+	// false를 반환하면 쿼리가 중단되고 에러 메세지가 포함됩니다.
 	virtual bool IsValid(FString& invalidDescription) const { return true; }
 };
 
-struct FCharacterManagerQueryDefaultFiler : public FCharacterManagerQueryFiler
+struct FCharacterManagerQueryDefaultFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
 	bool IsNotTargetToIgnore(const AActor* character) const;
@@ -108,7 +112,28 @@ struct FCharacterManagerQueryDefaultFiler : public FCharacterManagerQueryFiler
 	TArray<FName> Tags;			
 };
 
-struct FCharacterManagerQueryRaycastFiler : public FCharacterManagerQueryFiler
+struct FCharacterManagerQueryAngleFilter : public FCharacterManagerQueryFilter 
+{
+	virtual bool Search(const AActor* character) const override;
+	virtual bool IsValid(FString& invalidDescription) const override;
+
+	/*
+		A = Point부터 파라미터로 전달된 character액터를 향하는 방향벡터. 
+		B = Direction이 나타내는 방향벡터.
+		일때 A와 B의 내적을 통해 다른 캐릭터와의 각도를 구합니다. 해당 각도가 MaxAngle보다 크면 제외됩니다.
+	*/
+
+	// 다른 캐릭터를 향하는 방향벡터를 구하기 위한 기준점입니다.
+	FVector Point;
+
+	// 내적에 사용할 방향벡터입니다.
+	FVector Direction;
+
+	// 최대 각도입니다.
+	float MaxAngle = 90.f;
+};
+
+struct FCharacterManagerQueryRaycastFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
 	virtual bool IsValid(FString& invalidDescription) const override;
@@ -127,7 +152,7 @@ struct FCharacterManagerQueryRaycastFiler : public FCharacterManagerQueryFiler
 	TArray<const AActor*> Ignores;
 };
 
-struct FCharacterManagerQueryDistanceFiler : public FCharacterManagerQueryFiler
+struct FCharacterManagerQueryDistanceFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
 	bool IsInRadius(const AActor* character) const;
@@ -142,7 +167,7 @@ struct FCharacterManagerQueryDistanceFiler : public FCharacterManagerQueryFiler
 	bool UseCapsuleRadius = false;
 };
 
-struct FCharacterManagerQueryExecutableFiler : public FCharacterManagerQueryFiler
+struct FCharacterManagerQueryExecutableFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
 };
@@ -174,7 +199,7 @@ public:
 	TArray<TWeakObjectPtr<AActor>> GetEnemies() const { return mEnemies; }
 
 	AGodfallCharacterBase* Query(
-		const TArray<const FCharacterManagerQueryFiler*>& f3Dfilters, const FCharacterManager3DQuery& f3DQuery, const FCharacterManagerQueryOption& option,
+		const TArray<const FCharacterManagerQueryFilter*>& f3Dfilters, const FCharacterManager3DQuery& f3DQuery, const FCharacterManagerQueryOption& option,
 		const FCharacterManagerScreenQuery* fScreenQuery,
 		ECharacterManagerQueryResult* result = nullptr, FString* invalidFilterDescription = nullptr) const;
 

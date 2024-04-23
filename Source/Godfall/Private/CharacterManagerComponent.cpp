@@ -5,12 +5,12 @@
 #include "GodfallCharacterBase.h"
 #include "GodfallEnemyBase.h"
 
-bool FCharacterManagerQueryDefaultFiler::Search(const AActor* character) const
+bool FCharacterManagerQueryDefaultFilter::Search(const AActor* character) const
 {
 	return IsNotTargetToIgnore(character) && TagMatch(character);
 }
 
-bool FCharacterManagerQueryDefaultFiler::IsNotTargetToIgnore(const AActor* character) const
+bool FCharacterManagerQueryDefaultFilter::IsNotTargetToIgnore(const AActor* character) const
 {
 	if (Ignores.IsEmpty()) return true;
 
@@ -25,7 +25,7 @@ bool FCharacterManagerQueryDefaultFiler::IsNotTargetToIgnore(const AActor* chara
 	return true;
 }
 
-bool FCharacterManagerQueryDefaultFiler::TagMatch(const AActor* character) const
+bool FCharacterManagerQueryDefaultFilter::TagMatch(const AActor* character) const
 {
 	if (Tags.IsEmpty()) return true;
 
@@ -43,12 +43,12 @@ bool FCharacterManagerQueryDefaultFiler::TagMatch(const AActor* character) const
 	return false;
 }
 
-bool FCharacterManagerQueryRaycastFiler::Search(const AActor* character) const
+bool FCharacterManagerQueryRaycastFilter::Search(const AActor* character) const
 {
 	return IsNotBlocked(character);
 }
 
-bool FCharacterManagerQueryRaycastFiler::IsNotBlocked(const AActor* character) const
+bool FCharacterManagerQueryRaycastFilter::IsNotBlocked(const AActor* character) const
 {
 	FVector start = RaystartLocation;
 	FVector end = character->GetActorLocation();
@@ -60,7 +60,7 @@ bool FCharacterManagerQueryRaycastFiler::IsNotBlocked(const AActor* character) c
 	return !World->LineTraceTestByProfile(start, end, BlockedCheckPreset, params);
 }
 
-bool FCharacterManagerQueryRaycastFiler::IsValid(FString& invalidDescription) const
+bool FCharacterManagerQueryRaycastFilter::IsValid(FString& invalidDescription) const
 {
 	if (!ensure(World))
 	{
@@ -133,7 +133,7 @@ bool UCharacterManagerComponent::Contains(const AGodfallCharacterBase* character
 }
 
 AGodfallCharacterBase* UCharacterManagerComponent::Query(
-	const TArray<const FCharacterManagerQueryFiler*>& f3Dfilters, const FCharacterManager3DQuery& f3DQuery, const FCharacterManagerQueryOption& option,
+	const TArray<const FCharacterManagerQueryFilter*>& f3Dfilters, const FCharacterManager3DQuery& f3DQuery, const FCharacterManagerQueryOption& option,
 	const FCharacterManagerScreenQuery* fScreenQuery, 
 	ECharacterManagerQueryResult* result, FString* invalidFilterDescription) const
 {
@@ -395,12 +395,12 @@ bool UCharacterManagerComponent::CalcScreenDistance(
 	return false;
 }
 
-bool FCharacterManagerQueryDistanceFiler::Search(const AActor* character) const
+bool FCharacterManagerQueryDistanceFilter::Search(const AActor* character) const
 {
 	return IsInRadius(character);
 }
 
-bool FCharacterManagerQueryDistanceFiler::IsInRadius(const AActor* character) const
+bool FCharacterManagerQueryDistanceFilter::IsInRadius(const AActor* character) const
 {
 	float capsuleRadius = 0.0f;
 	if (UseCapsuleRadius)
@@ -415,7 +415,7 @@ bool FCharacterManagerQueryDistanceFiler::IsInRadius(const AActor* character) co
 	return distance < Radius;
 }
 
-bool FCharacterManagerQueryExecutableFiler::Search(const AActor* character) const
+bool FCharacterManagerQueryExecutableFilter::Search(const AActor* character) const
 {
 	const AGodfallEnemyBase* godfallEnemy = Cast<AGodfallEnemyBase>(character);
 	if (!ensure(godfallEnemy)) return false;
@@ -424,4 +424,17 @@ bool FCharacterManagerQueryExecutableFiler::Search(const AActor* character) cons
 	bool containsExecuteMontage = godfallEnemy->IsExecutableEnemy();
 
 	return isStun && containsExecuteMontage;
+}
+
+bool FCharacterManagerQueryAngleFilter::Search(const AActor* character) const 
+{
+	FVector PointToOtherCharacter = (character->GetActorLocation() - Point).GetSafeNormal();
+	float Radian = FMath::Acos(FVector::DotProduct(PointToOtherCharacter, Direction));
+	float Angle = FMath::RadiansToDegrees(Radian);
+	return Angle < MaxAngle;
+}
+
+bool FCharacterManagerQueryAngleFilter::IsValid(FString& invalidDescription) const 
+{
+	return Direction != FVector::ZeroVector;
 }

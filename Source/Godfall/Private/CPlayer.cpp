@@ -236,27 +236,34 @@ bool ACPlayer::OnLightAttack()
 	AGodfallGameState* gameState = Cast<AGodfallGameState>(GetWorld()->GetGameState());
 	if (ensure(gameState))
 	{
-		TArray<const FCharacterManagerQueryFiler*> f3Dfilters;
+		TArray<const FCharacterManagerQueryFilter*> f3Dfilters;
 
-		FCharacterManagerQueryExecutableFiler executableFilter;
+		FCharacterManagerQueryExecutableFilter executableFilter;
 		f3Dfilters.Add(&executableFilter);
 
-		FCharacterManagerQueryDistanceFiler distanceFilter;
+		FCharacterManagerQueryDistanceFilter distanceFilter;
 		distanceFilter.Point = GetActorLocation();
 		distanceFilter.Radius = mExecuteDistance + GetCapsuleComponent()->GetScaledCapsuleRadius();
 		distanceFilter.UseCapsuleRadius = true;
 		f3Dfilters.Add(&distanceFilter);
 
-		FCharacterManagerQueryRaycastFiler raycastFilter;
-		raycastFilter.RaystartLocation = mCameraDirector->GetCamera()->GetComponentLocation();
+		FCharacterManagerQueryRaycastFilter raycastFilter;
+		raycastFilter.RaystartLocation = GetActorLocation();
 		raycastFilter.World = GetWorld();
 		raycastFilter.BlockedCheckPreset = GodfallPresets::SweepCollision;
 		f3Dfilters.Add(&raycastFilter);
 
+		// 캐릭터가 플레이어 캐릭터 뒤에 있는지 검사하기 위한 설정
+		FCharacterManagerQueryAngleFilter angleFilter;
+		angleFilter.Point = GetActorLocation();
+		angleFilter.Direction = mCameraDirector->GetCamera()->GetForwardVector();
+		angleFilter.MaxAngle = 50.f;
+		f3Dfilters.Add(&angleFilter);
+
 		FCharacterManagerQueryOption option;
 
 		FCharacterManager3DQuery f3DQuery;
-		f3DQuery.Point = mCameraDirector->GetCamera()->GetComponentLocation();
+		f3DQuery.Point = GetActorLocation();
 		f3DQuery.Rotation = mCameraDirector->GetCamera()->GetComponentRotation();
 
 		AGodfallCharacterBase* character = gameState->GetCharacterManager()->Query(f3Dfilters, f3DQuery, option, nullptr);
@@ -337,14 +344,21 @@ void ACPlayer::ToggleLockOn()
 		AGodfallGameState* gameState = Cast<AGodfallGameState>(GetWorld()->GetGameState());
 		if (ensure(gameState))
 		{
-			TArray<const FCharacterManagerQueryFiler*> f3Dfilters;
+			TArray<const FCharacterManagerQueryFilter*> f3Dfilters;
 
 			// 캐릭터가 벽에 가려져 있는지 검사하기 위한 레이캐스트 설정
-			FCharacterManagerQueryRaycastFiler raycastFilter;
+			FCharacterManagerQueryRaycastFilter raycastFilter;
 			raycastFilter.RaystartLocation = mCameraDirector->GetCamera()->GetComponentLocation();
 			raycastFilter.World = GetWorld();
 			raycastFilter.BlockedCheckPreset = GodfallPresets::SweepCollision;
 			f3Dfilters.Add(&raycastFilter);
+
+			// 캐릭터가 카메라 뒤에 있는지 검사하기 위한 설정
+			FCharacterManagerQueryAngleFilter angleFilter;
+			angleFilter.Point = mCameraDirector->GetCamera()->GetComponentLocation();
+			angleFilter.Direction = mCameraDirector->GetCamera()->GetForwardVector();
+			angleFilter.MaxAngle = 50.f;
+			f3Dfilters.Add(&angleFilter);
 
 			FCharacterManagerQueryOption option;
 
@@ -377,13 +391,13 @@ void ACPlayer::TryChangeLockOnTarget(float deltaTime, const FVector2D& screenDel
 	if (ensure(gameState))
 	{
 #pragma region PARAMETER_SETTING
-		TArray<const FCharacterManagerQueryFiler*> f3Dfilters;
+		TArray<const FCharacterManagerQueryFilter*> f3Dfilters;
 
-		FCharacterManagerQueryDefaultFiler defaultFilter;
+		FCharacterManagerQueryDefaultFilter defaultFilter;
 		defaultFilter.Ignores.Add(mCameraDirector->mFocusActor.Get());
 		f3Dfilters.Add(&defaultFilter);
 
-		FCharacterManagerQueryRaycastFiler raycastFilter;
+		FCharacterManagerQueryRaycastFilter raycastFilter;
 		raycastFilter.RaystartLocation = mCameraDirector->GetCamera()->GetComponentLocation();
 		raycastFilter.World = GetWorld();
 		raycastFilter.BlockedCheckPreset = GodfallPresets::SweepCollision;
