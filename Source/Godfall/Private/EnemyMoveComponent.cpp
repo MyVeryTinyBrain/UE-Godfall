@@ -196,9 +196,11 @@ bool UEnemyMoveComponent::IsNearWith(const AActor* actor, float distance) const
 bool UEnemyMoveComponent::GetNextLocation(FVector& nextLocation, bool* isPartial) const
 {
 	UNavigationPath* path = nullptr;
+	// 이동할 위치를 반환받습니다.
 	FVector targetLocation;
 	if (GetTargetLocation(targetLocation))
 	{
+		// 해당 위치까지의 경로를 탐색합니다.
 		path = UNavigationSystemV1::FindPathToLocationSynchronously(
 			GetWorld(),
 			mEnemy->GetActorLocation(),
@@ -206,12 +208,12 @@ bool UEnemyMoveComponent::GetNextLocation(FVector& nextLocation, bool* isPartial
 			mEnemy
 		);
 	}
-	// 목표로 향하는 경로까지 서로 떨어진 네비메쉬를 거쳐야 하는 경우(이동 불가)
+	// 목표로 향하는 경로까지 서로 떨어진 네비메쉬를 거쳐야 하는 경우입니다.
 	if (isPartial)
 	{
 		*isPartial = path ? path->IsPartial() : false;
 	}
-	// 다음에 이동해야 하는 위치를 반환
+	// 경로를 제대로 탐색했을 때, 탐색한 경로의 첫 번째 위치를 반환합니다.
 	if (path && path->PathPoints.Num() > 1)
 	{
 		nextLocation = path->PathPoints[1];
@@ -301,7 +303,6 @@ bool UEnemyMoveComponent::IsBlockedByOtherCharacter(const FVector& nextDirection
 bool UEnemyMoveComponent::IsBlockedByOtherCharacterOrStatic(const FVector& nextDirection, E4Direction rotateDirection, float distance) const
 {
 	if (IsBlocked(nextDirection, rotateDirection, distance, GodfallTags::Enemy, GodfallPresets::SweepPawn)) return true;
-	//if (IsBlocked(nextDirection, rotateDirection, distance, NAME_None, GodfallPresets::SweepStatic)) return true;
 	return false;
 }
 
@@ -407,23 +408,24 @@ void UEnemyMoveComponent::TickMove()
 	FVector nextLocation;
 	FVector nextDirection;
 	bool isPartial;
-	if (GetNextLocation(nextLocation, &isPartial))
+	// 이동해야 할 위치를 탐색합니다.
+	bool validNextLocation = GetNextLocation(nextLocation, &isPartial);
+	// 위치 탐색에 성공하면, 캐릭터를 이동해야 할 곳으로 회전합니다.
+	if (validNextLocation)
 	{
 		nextDirection = GetActorToTargetXYDirection(nextLocation);
 		SetLookDirection(nextDirection);
-		if (isPartial && mStopIfPartialPath)
-		{
-			SetToFailed();
-		}
 	}
-	else
+	// 위치 탐색에 실패했거나, 이동할 수 없는 경로가 탐색된 경우, 정지합니다.
+	if (validNextLocation || (isPartial && mStopIfPartialPath)) 
 	{
 		SetToFailed();
 	}
 	if (mUseWait)
 	{
-		// 정면 진행 방향이 다른 캐릭터에 의해 막힌 경우 Wait 상태로 변경한다.
-		bool blockedByOtherChracter = IsBlockedByOtherCharacter(nextDirection, E4Direction::Forward, mBlockDistance);
+		// 정면 진행 방향이 다른 캐릭터에 의해 막힌 경우 Wait 상태로 변경합니다.
+		bool blockedByOtherChracter = IsBlockedByOtherCharacter(
+			nextDirection, E4Direction::Forward, mBlockDistance);
 		if (blockedByOtherChracter)
 		{
 			SetState(EEnemyMoveComponentState::Wait);
@@ -466,6 +468,7 @@ void UEnemyMoveComponent::TickWait(float deltaTime)
 
 bool UEnemyMoveComponent::CanAvoid() const
 {
+	// 다음에 이동해야 할 방향을 탐색합니다.
 	FVector nextLocation;
 	FVector nextDirection;
 	if (GetNextLocation(nextLocation))
@@ -476,11 +479,11 @@ bool UEnemyMoveComponent::CanAvoid() const
 	{
 		nextDirection = GetOwner()->GetActorForwardVector();
 	}
-
+	// 좌, 우, 뒤 방향으로 Sweep 검사를 합니다.
+	// 좌, 우, 뒤 중 하나라도 이동 가능한 공간이 있으면 회피 상태가 될 수 있습니다.
 	bool B = IsBlockedByOtherCharacterOrStatic(nextDirection, E4Direction::Backward, mAvoidDistance);
 	bool R = IsBlockedByOtherCharacterOrStatic(nextDirection, E4Direction::Right, mAvoidDistance);
 	bool L = IsBlockedByOtherCharacterOrStatic(nextDirection, E4Direction::Left, mAvoidDistance);
-
 	return ((B + R + L) < 3);
 }
 

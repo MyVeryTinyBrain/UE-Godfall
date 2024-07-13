@@ -15,12 +15,14 @@ void UGodfallAnimNotifyStateBase::NotifyBegin(USkeletalMeshComponent* MeshComp, 
 	UAnimInstance* animInstance = MeshComp->GetAnimInstance();
 	if (animInstance)
 	{
+		// GetFunctionName이 반환한 함수명을 가진 함수를 탐색합니다.
 		UFunction* function = animInstance->FindFunction(GetFunctionName());
 		if (function && function->NumParms == 3)
 		{
+			// 탐색한 함수에 바인드합니다.
 			FOnAnimNotifyStateEvent Delegate;
 			Delegate.BindUFunction(animInstance, GetFunctionName());
-
+			// 바인드한 함수를 호출하며, 이벤트 데이터를 전달합니다.
 			FAnimNotifiyStateData data;
 			data.MeshComp = MeshComp;
 			data.Animation = Animation;

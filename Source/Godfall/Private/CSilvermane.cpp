@@ -108,45 +108,45 @@ bool ACSilvermane::IsInvincible() const
 
 EBlockOutput ACSilvermane::CanBlock(const FDamageInput& damageInput) const
 {
-	// 쉴드가 닫히는 중에도 방어가 가능하게 한다.
+	// 쉴드가 닫히는 중에도 방어가 가능하도록 합니다.
+	// 가드 버튼을 짧게 누르고 떼어도 방어가 가능합니다.
 	if (!mShield->IsOpen())
 	{
 		float currentTime = GetWorld()->GetTime().GetWorldTimeSeconds();
-		// 마지막으로 방패를 올린 시간과 현재 시간과의 차이
-		if (FMath::Abs(currentTime - mLastGuardTime) > mPerfectBlockLimit)
+		// 마지막으로 방패를 올린 시간과 현재 시간과의 차이를 구합니다.
+		float delta = FMath::Abs(currentTime - mLastGuardTime);
+		// 그 시간 차이가 퍼펙트 블록 제한시간 이내가 아니면 실패합니다.
+		if (FMath::Abs(delta) > mPerfectBlockLimit)
 		{
 			return EBlockOutput::Fail;
 		}
 	}
-	// 스턴 중에는 방어 불가능
+	// 스턴 중에는 방어할 수 없습니다.
 	if (mAnimInstance->IsPlayingStunMontage())
 	{
 		return EBlockOutput::Fail;
 	}
+
+	// 이 캐릭터가 적을 향하는 각도를 구합니다.
+	static const float limitAngle = 90.0f;
+	static const float limitCos = FMath::Cos(FMath::DegreesToRadians(limitAngle));
 	FVector thisToCauser = (damageInput.CauserActor->GetActorLocation() - GetActorLocation());
 	FVector thisToCauserXY = FVector::VectorPlaneProject(thisToCauser, FVector::UpVector).GetSafeNormal();
 	FVector forwardXY = FVector::VectorPlaneProject(GetActorForwardVector(), FVector::UpVector).GetSafeNormal();
 	float dot = FVector::DotProduct(thisToCauserXY, forwardXY);
-	static const float limitAngle = 90.0f;
-	static const float limitCos = FMath::Cos(FMath::DegreesToRadians(limitAngle));
-	// 적을 바라보는 각도가 일정 각도 이내일 때만 방어할 수 있다.
+	// 적을 향하는 각도가 일정 각도 이내일 때만 방어할 수 있습니다.
 	if (dot > limitCos)
 	{
-		// 마지막으로 방패를 올린 시간과 현재 시간과의 차이
+		// 마지막으로 방패를 올린 시간과 현재 시간과의 차이를 구합니다.
 		float delta = GetWorld()->GetTime().GetWorldTimeSeconds() - mLastGuardTime;	
+		// 시간 차이에 따라 완벽한 가드, 일반 가드로 나뉩니다.
 		if (delta < mPerfectBlockLimit)
-		{
 			return EBlockOutput::Blocked_Perfect;
-		}
 		else
-		{
 			return EBlockOutput::Blocked;
-		}
 	}
 	else
-	{
 		return EBlockOutput::Fail;
-	}
 }
 
 void ACSilvermane::OnGuard(const FDamageOutput& damageOutput)
@@ -298,10 +298,8 @@ ESilvermaneWeapon ACSilvermane::GetWeaponType() const
 bool ACSilvermane::TryExecute(AGodfallEnemyBase* targetEnemy)
 {
 	if (!ensure(targetEnemy)) return false;
-
-	// 적의 종류에 따라 다른 처형 애니메이션을 재생한다.
+	// 피니시 대상인 적의 종류에 알맞은 피니시 몽타주를 재생합니다.
 	if (!mAnimInstance->PlayExecutionMontageWithEnemy(targetEnemy)) return false;
-
 #pragma region DISABLE COLLISION
 	AGodfallGameState* gameState = Cast<AGodfallGameState>(GetWorld()->GetGameState());
 	if (ensure(gameState))
@@ -315,8 +313,7 @@ bool ACSilvermane::TryExecute(AGodfallEnemyBase* targetEnemy)
 	}
 	targetEnemy->MoveIgnoreActorAdd(this);
 #pragma endregion
-
-	// 서로를 바라보게 한다.
+	// 두 캐릭터가 서로를 바라보게 합니다.
 	FVector enemyToPlayer = (GetActorLocation() - targetEnemy->GetActorLocation());
 	enemyToPlayer = FVector::VectorPlaneProject(enemyToPlayer, FVector::UpVector).GetSafeNormal();
 	FVector executionLocation = targetEnemy->GetActorLocation() + enemyToPlayer * (mExecuteDistance);
@@ -761,16 +758,18 @@ void ACSilvermane::TickForJump()
 {
 	if (!mAnimInstance->IsPlayingJumpMontage()) return;
 	if (!mAnimInstance->IsPlayingJumpingSectionOfJumpMontage()) return;
-
+	// 점프 애니메이션의 정규화된 시간을 포물선 함수의 인자로 사용합니다.
 	float tiemFractionInSection = mAnimInstance->GetJumpingSectionTimeFractionOfJumpMontage();
-
+	// 포물선 함수를 사용해 발의 위치를 설정합니다.
 	FVector feetLocation = GodfallUtil::Vector3D::Parabola(mParabolaJumpCoefficient, tiemFractionInSection);
+	// 계산한 캐릭터 위치를 설정합니다.
 	FVector actorLocation = feetLocation + FVector::UpVector *GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	SetActorLocation(actorLocation);
 }
 
 void ACSilvermane::TickForExecuteLocation()
 {
+	// 피니시 애니메이션 재생중일 때 유효합니다.
 	if (mExecutioningTarget && mAnimInstance->IsActiveExecutionMontage())
 	{
 		FVector playerRoot = GetMesh()->GetBoneLocation(TEXT("root"));
@@ -778,9 +777,9 @@ void ACSilvermane::TickForExecuteLocation()
 		FVector enemyRoot = mExecutioningTarget->GetMesh()->GetBoneLocation(TEXT("root"));
 
 		FVector enemyToPlayer = playerRoot - utility_01;
-		// 플레이어가 적의 처형용 본 utility_01에 위치하도록 한다.
+		// 플레이어가 적의 피니시용 본 utility_01에 위치하도록 합니다.
 		FVector newPlayerRootLocation = enemyRoot + enemyToPlayer;
-		// 발 높이를 더해준다.
+		// 캐릭터의 발이 지면에 위치하도록 조정합니다.
 		FVector newPlayerLocation = newPlayerRootLocation + FVector::UpVector * GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 		newPlayerLocation.Z = GetActorLocation().Z;
 

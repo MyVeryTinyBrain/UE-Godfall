@@ -345,31 +345,28 @@ void ACPlayer::ToggleLockOn()
 		if (ensure(gameState))
 		{
 			TArray<const FCharacterManagerQueryFilter*> f3Dfilters;
-
-			// 캐릭터가 벽에 가려져 있는지 검사하기 위한 레이캐스트 설정
+			// 캐릭터가 벽에 가려져 있는지 검사하기 위한 쿼리 필터를 설정합니다.
 			FCharacterManagerQueryRaycastFilter raycastFilter;
 			raycastFilter.RaystartLocation = mCameraDirector->GetCamera()->GetComponentLocation();
 			raycastFilter.World = GetWorld();
 			raycastFilter.BlockedCheckPreset = GodfallPresets::SweepCollision;
 			f3Dfilters.Add(&raycastFilter);
-
-			// 캐릭터가 카메라 뒤에 있는지 검사하기 위한 설정
+			// 캐릭터가 카메라 뒤에 있는지 검사하기 위한 쿼리 필터를 설정합니다.
 			FCharacterManagerQueryAngleFilter angleFilter;
 			angleFilter.Point = mCameraDirector->GetCamera()->GetComponentLocation();
 			angleFilter.Direction = mCameraDirector->GetCamera()->GetForwardVector();
 			angleFilter.MaxAngle = 50.f;
 			f3Dfilters.Add(&angleFilter);
-
 			FCharacterManagerQueryOption option;
-
-			// 캐릭터와 카메라 사이의 거리를 비교하기 위한 설정
+			// 캐릭터와 카메라 사이의 거리를 비교하기 위한 쿼리 옵션을 설정합니다.
+			// 이 설정은 카메라에서 가장 가까운 캐릭터를 선택하는 옵션입니다.
 			FCharacterManager3DQuery f3DQuery;
 			f3DQuery.Point = mCameraDirector->GetCamera()->GetComponentLocation();
 			f3DQuery.Rotation = mCameraDirector->GetCamera()->GetComponentRotation();
-
-			// 벽에 가려져 있지 않은 캐릭터 중 화면 중심에서 가장 가까운 캐릭터를 탐색
+			// 벽에 가려져 있지 않은 캐릭터 중 화면 중심에서 가장 가까운 캐릭터를 쿼리합니다.
 			AGodfallCharacterBase* character = 
 				gameState->GetCharacterManager()->Query(f3Dfilters, f3DQuery, option, nullptr);
+			// 쿼리한 캐릭터를 락온 대상으로 설정합니다.
 			mCameraDirector->mFocusActor = character;		
 		}
 	}
@@ -377,43 +374,44 @@ void ACPlayer::ToggleLockOn()
 
 void ACPlayer::TryChangeLockOnTarget(float deltaTime, const FVector2D& screenDelta)
 {
-#pragma region PRUNING
+	// 이 시간동안 락온 대상을 변경할 수 없습니다.
 	if (mChangeLockOnDelay > 0.0f)
 	{
 		mChangeLockOnDelay -= deltaTime;
 		return;
 	}
 	if (!mCameraDirector->mFocusActor.IsValid()) return;
-#pragma endregion
-	// 마우스 이동 거리가 한계값보다 작으면 락온 대상을 변경하지 않는다.
+	// 마우스 이동 거리가 한계값보다 작으면 락온 대상을 변경하지 않습니다.
 	if (screenDelta.Length() < mLimitDeltaLengthToChangeLockOn) return;
 	AGodfallGameState* gameState = Cast<AGodfallGameState>(GetWorld()->GetGameState());
 	if (ensure(gameState))
 	{
-#pragma region PARAMETER_SETTING
 		TArray<const FCharacterManagerQueryFilter*> f3Dfilters;
-
+		// 현재 락온중인 캐릭터를 제외하는 쿼리 필터를 설정합니다.
 		FCharacterManagerQueryDefaultFilter defaultFilter;
 		defaultFilter.Ignores.Add(mCameraDirector->mFocusActor.Get());
 		f3Dfilters.Add(&defaultFilter);
-
+		// 캐릭터가 벽에 가려지 있는지 검사하기 위한 쿼리 필터를 설정합니다.
 		FCharacterManagerQueryRaycastFilter raycastFilter;
 		raycastFilter.RaystartLocation = mCameraDirector->GetCamera()->GetComponentLocation();
 		raycastFilter.World = GetWorld();
 		raycastFilter.BlockedCheckPreset = GodfallPresets::SweepCollision;
 		f3Dfilters.Add(&raycastFilter);
-
 		FCharacterManagerQueryOption option;
-
+		// 캐릭터와 카메라 사이의 거리를 비교하기 위한 쿼리 옵션을 설정합니다.
+		// 이 설정은 카메라에서 가장 가까운 캐릭터를 선택하는 옵션입니다.
 		FCharacterManager3DQuery f3DQuery;
 		f3DQuery.Point = mCameraDirector->GetCamera()->GetComponentLocation();
 		f3DQuery.Rotation = mCameraDirector->GetCamera()->GetComponentRotation();
-#pragma endregion
+		// 스크립 상에서 마우스 이동 방향 벡터에 투명하기 위한 쿼리 옵션을 설정합니다.
+		// 이를 통해 마우스 이동 방향에 가장 가까운 캐릭터를 선택하게 됩니다.
 		FCharacterManagerScreenQuery fScreenQuery;
 		fScreenQuery.LineDirection = screenDelta;
-
-		AGodfallCharacterBase* character = gameState->GetCharacterManager()->Query(f3Dfilters, f3DQuery, option, &fScreenQuery);
-		
+		// 벽에 가려져 있지 않은 캐릭터 중, 화면 중심에 가깝고, 
+		// 마우스 이동 방향 벡터에 투영했을 때 가장 가까운 캐릭터를 쿼리합니다.
+		AGodfallCharacterBase* character = gameState->
+			GetCharacterManager()->Query(f3Dfilters, f3DQuery, option, &fScreenQuery);
+		// 쿼리한 캐릭터를 락온 대상으로 변경합니다.
 		if (character)
 		{
 			mChangeLockOnDelay = mDelayToChnageLockOn;

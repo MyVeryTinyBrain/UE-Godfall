@@ -117,15 +117,21 @@ void AGodfallCharacterBase::OnDamagableEvent(EAnimNotifyStateEvent eEvent, const
 {
 	switch (eEvent)
 	{
+		// 공격 가능 구간 시작
 		case EAnimNotifyStateEvent::Begin:
 		{
+			// 애니메이션 노티파이 스테이트에 설정된 데미지 정보를 사용합니다.
 			mDamagableData = data;
+			// 애니메이션 노티파이 스테이트에 설정된 무기의 콜리전을 활성화합니다.
 			Hitbox->SetHitboxCollision(data.HitboxIndex, true);
 		}
 		break;
+		// 공격 가능 구간 종료
 		case EAnimNotifyStateEvent::End:
 		{
+			// 애니메이션 노티파이 스테이트에 설정된 무기의 콜리전을 비활성화합니다.
 			Hitbox->SetHitboxCollision(data.HitboxIndex, false);
+			// 중복 타격 검사를 위한 타격 셋을 초기화합니다.
 			Hitbox->ResetHitBuffer(data.HitboxIndex);
 		}
 		break;
@@ -150,21 +156,25 @@ void AGodfallCharacterBase::OnAnimNotifyFootstep()
 	PlayFootstepSound();
 }
 
+// 이 캐릭터의 무기가 다른 캐릭터에 오버랩되면 호출되는 콜백입니다.
 void AGodfallCharacterBase::OnHitboxOverlap(
 	UPrimitiveComponent* OverlappedComponent, 
 	AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
 	bool bFromSweep, const FHitResult& SweepResult)
 {
+	// 이 캐릭터가 공격한 다른 캐릭터입니다.
 	AGodfallCharacterBase* character = Cast<AGodfallCharacterBase>(OtherActor);
 	if (character)
 	{
+		// 다른 캐릭터에 오버랩된 콜리전(무기 히트박스) 인덱스를 탐색합니다.
 		int hitboxIndex = Hitbox->GetHitboxIndex(OverlappedComponent);
 		if (hitboxIndex < 0) return;
-
+		// 이 타격이 유효한 타격인지 검사합니다.
 		if (Hitbox->AddActorToHitBuffer(hitboxIndex, OtherActor))
 		{
+			// Damagable 애니메이션 스테이트에 의해 설정된 데미지 정보를 사용합니다.
 			FDamagableData damagableData = mDamagableData;
-
+			// 다른 캐릭터에게 공격이 가하는 방향을 계산합니다.
 			FVector otherForward = character->GetActorForwardVector();
 			FVector otherToThis = GetActorLocation() - character->GetActorLocation();
 			otherToThis = FVector::VectorPlaneProject(otherToThis, FVector::UpVector);
@@ -173,14 +183,14 @@ void AGodfallCharacterBase::OnHitboxOverlap(
 			if (d > 0.0f) damagableData.DamageDirection = 
 				damagableData.DamageDirection == EDamageDirection::Left ? 
 				 EDamageDirection::Right : EDamageDirection::Left;
-
+			// 데미지를 가하는 정보 객체를 생성합니다.
 			FDamagableInput damagableInput;
 			damagableInput.Data = damagableData;
 			damagableInput.Hitbox = OverlappedComponent;
-
 			FDamageInput damageInput = OnHit(damagableInput);
-
+			// 공격당한 캐릭터에 데미지를 가하고, 그 결과를 반환받습니다.
 			FDamageOutput damageOutput = character->Damage(damageInput);
+			// 공격한 이후의 부가 처리를 합니다.
 			OnPostHit(damageOutput);
 		}
 	}
@@ -424,6 +434,8 @@ void AGodfallCharacterBase::OnPostHit(const FDamageOutput& damageOutput)
 
 			bool onMaxStemina;
 			SetStemina(mStemina + mBlockSteminaDamage, onMaxStemina);
+
+			// 스태미나가 최대치가 되면 스턴 몽타주를 재생합니다.
 			if (onMaxStemina)
 			{
 				OnMaxStemina();

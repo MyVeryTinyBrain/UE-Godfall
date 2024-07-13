@@ -227,20 +227,24 @@ bool UCharacterRotateComponent::RemoveTarget(const FString& TargetName)
 
 void UCharacterRotateComponent::Rotate(float deltaTime)
 {
+	// 회전 가능한 상태인지를 나타냅니다.
 	bool rotate = GetOverridedRotate();
+	// 회전 속도를 나타냅니다.
 	float speed = GetOverridedSpeed();
+	// 회전할 방향을 나타냅니다.
 	FRotator rotator = GetOverridedRotator();
-
+	// 회전 가능한 상태이면 회전합니다.
 	if (rotate)
 	{
+		// 목표 방향으로 일정 각도 회전한 방향을 계산합니다.
 		FRotator newRotation = FMath::RInterpTo(GetOwner()->GetActorRotation(), rotator, deltaTime, speed);
-
+		// XY 평면 위에서만 회전하도록 합니다.
 		if (mRotateOnXYCoordinates)
 		{
 			newRotation.Roll = 0.0f;
 			newRotation.Pitch = 0.0f;
 		}
-
+		// 회전을 적용합니다.
 		GetOwner()->SetActorRotation(newRotation);
 
 		if (mOverride.Override && mOverride.OverrideRotate && mOverride.OverwriteRotate)

@@ -568,6 +568,8 @@ void UAnimInstanceSilvermane::SolveEquip()
 
 void UAnimInstanceSilvermane::SolveExitable()
 {
+	// 애니메이션 조기중단 구간 노티파이 스테이트를 지나고 있으며,
+	// 몽타주가 재생중이고, 이동 입력을 받았다면
 	if (IsExitable() && Montage_IsActive(nullptr) && mMoveSpeed != ESilvermaneMoveSpeed::Stop)
 	{
 #pragma region TIME FRACTION CHECK
@@ -582,6 +584,7 @@ void UAnimInstanceSilvermane::SolveExitable()
 		if (currentTimeFractionInSection < 0.01f) return;
 #pragma endregion
 		mAttackType = ESilvermaneAttackType::None;
+		// 모든 몽타주를 중단합니다.
 		StopAllMontages(0.4f);
 		return;
 	}

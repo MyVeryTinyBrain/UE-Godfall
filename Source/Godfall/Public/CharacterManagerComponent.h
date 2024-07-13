@@ -88,6 +88,7 @@ struct FCharacterManagerScreenQuery
 	FVector2D LineDirection; // 정규화되지 않은 값이어도 괜찮습니다.
 };
 
+// 캐릭터 쿼리의 부모 구조체입니다.
 struct FCharacterManagerQueryFilter
 {
 	virtual ~FCharacterManagerQueryFilter() {}
@@ -98,7 +99,7 @@ struct FCharacterManagerQueryFilter
 	// false를 반환하면 쿼리가 중단되고 에러 메세지가 포함됩니다.
 	virtual bool IsValid(FString& invalidDescription) const { return true; }
 };
-
+// 검사에서 제외할 캐릭터를 추가하거나, 태그가 일차하는 캐릭터만을 통과시킵니다.
 struct FCharacterManagerQueryDefaultFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
@@ -111,7 +112,7 @@ struct FCharacterManagerQueryDefaultFilter : public FCharacterManagerQueryFilter
 	// 태그가 없다면 태그 검사를 하지 않습니다.
 	TArray<FName> Tags;			
 };
-
+// 특정 위치와 방향 벡터로부터 일정 각도 내에 존재하는 캐릭터만을 통과시킵니다.
 struct FCharacterManagerQueryAngleFilter : public FCharacterManagerQueryFilter 
 {
 	virtual bool Search(const AActor* character) const override;
@@ -132,7 +133,7 @@ struct FCharacterManagerQueryAngleFilter : public FCharacterManagerQueryFilter
 	// 최대 각도입니다.
 	float MaxAngle = 90.f;
 };
-
+// 특정 위치부터 캐릭터까지 레이캐스트해 벽에 막히지 않은 경우에만 통과시킵니다.
 struct FCharacterManagerQueryRaycastFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
@@ -151,7 +152,7 @@ struct FCharacterManagerQueryRaycastFilter : public FCharacterManagerQueryFilter
 	// 이 캐릭터들은 레이캐스트에서 제외됩니다.
 	TArray<const AActor*> Ignores;
 };
-
+// 특정 위치부터 다른 캐릭터까지 일정 거리 내에 존재하는 캐릭터만을 통과시킵니다.
 struct FCharacterManagerQueryDistanceFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
@@ -166,7 +167,7 @@ struct FCharacterManagerQueryDistanceFilter : public FCharacterManagerQueryFilte
 	// 캡슐의 반지름을 사용하여 캡슐의 모서리부터 기준점까지의 거리를 구합니다.
 	bool UseCapsuleRadius = false;
 };
-
+// 스턴 상태인 캐릭터(피니시 공격의 대상)만을 통과시킵니다.
 struct FCharacterManagerQueryExecutableFilter : public FCharacterManagerQueryFilter
 {
 	virtual bool Search(const AActor* character) const override;
@@ -198,8 +199,17 @@ public:
 
 	TArray<TWeakObjectPtr<AActor>> GetEnemies() const { return mEnemies; }
 
+	// 반환: 필터 검사->3D 거리 정렬->스크린 거리 정렬(nullptr이 아닌 경우) 과정을 거쳐 하나의 캐릭터를 반환합니다.
+	// f3Dfilters: 이 필터를 모두 통과한 캐릭터만 유효합니다.
+	// f3DQuery: 필터를 통과한 캐릭터들의 3D 거리를 구해, 정의된 규칙대로 정렬해 가장 앞의 캐릭터를 반환하는데 사용합니다.
+	// option: 어떤 종류의 캐릭터를 탐색할지 선택합니다.
+	// fScreenQuery: f3DQuery 이후에, 캐릭터들의 스크린상 거리를 구해, 정의된 규칙대로 정렬해 가장 앞의 캐릭터를 반환하는데 사용합니다.
+	// result: 쿼리의 결과타내는 Enum입니다.
+	// invalidFilterDescription: 쿼리가 실패했을때 실패한 사유가 저장됩니다.
 	AGodfallCharacterBase* Query(
-		const TArray<const FCharacterManagerQueryFilter*>& f3Dfilters, const FCharacterManager3DQuery& f3DQuery, const FCharacterManagerQueryOption& option,
+		const TArray<const FCharacterManagerQueryFilter*>& f3Dfilters, 
+		const FCharacterManager3DQuery& f3DQuery, 
+		const FCharacterManagerQueryOption& option,
 		const FCharacterManagerScreenQuery* fScreenQuery,
 		ECharacterManagerQueryResult* result = nullptr, FString* invalidFilterDescription = nullptr) const;
 

@@ -136,6 +136,9 @@ bool UHitboxComponent::AddActorToHitBuffer(int index, AActor* actor)
 {
 	if (!ensure(mHitBuffer.Contains(index))) return false;
 	bool isAlreadyInSet = false;
+	// index 번째의 무기 히트박스 셋에 공격한 액터를 추가합니다.
+	// 이미 추가되어 있다면 공격은 유효하지 않습니다.
+	// 이 셋은 Damagable 애니메이션 노티파이 스테이트를 벗어날 때 초기화됩니다.
 	mHitBuffer[index].Add(actor, &isAlreadyInSet);
 	return (!isAlreadyInSet);
 }

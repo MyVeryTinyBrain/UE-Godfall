@@ -169,38 +169,40 @@ AGodfallCharacterBase* UCharacterManagerComponent::Query(
 	{
 		TArray<FCharacterDistance> f3DDistances;
 
+		// 모든 캐릭터를 순회합니다.
 		for (auto& character : filteredCharacters)
 		{
 			if (!character.IsValid()) continue;
-
 			bool succeeded = true;
+			// 각 캐릭터마다 필터 검사를 합니다.
 			for (auto& f3Dfilter : f3Dfilters)
 			{
+				// 예외가 발생하면 쿼리를 중단하고, 실패 사유를 저장합니다.
 				if (!ensure(f3Dfilter))
 				{
 					WriteInvalidFilterDescription(result, invalidFilterDescription, TEXT("Filter is nullptr"));
 					return nullptr;
 				}
-
+				// 올바르지 않은 필터이면 예외를 발생시키고, 필터에서 발생한 실패 사유를 저장합니다.
 				FString invalidDescription;
 				if (!ensure(f3Dfilter->IsValid(invalidDescription)))
 				{
 					WriteInvalidFilterDescription(result, invalidFilterDescription, invalidDescription);
 					return nullptr;
 				}
-
+				// 캐릭터를 필터에 적용시켜 통과하는지 검사합니다.
 				if (!f3Dfilter->Search(character.Get()))
 				{
 					succeeded = false;
 					break;
 				}
 			}
-
+			// 캐릭터가 모든 필터를 통과했으면, f3DQuery에 설정된 방법대로 거리를 계산합니다.
+			// 캐릭터와 거리를 쌍으로 묶어 리스트에 저장합니다.
 			if (succeeded)
 			{
 				float distance = CalcDistance(character.Get(), f3DQuery);
 				f3DDistances.Add({ character.Get(), distance });
-
 				if (f3DQuery.DistancePriority == ECharacterManagerQueryDistancePriority::None)
 				{
 					break;
@@ -351,21 +353,21 @@ bool UCharacterManagerComponent::CalcScreenDistance(
 	bool outOfScreen = true;
 	FVector2D screenLocation;
 	FVector2D screenDirection = fScreenQuery->LineDirection.GetSafeNormal();
-
 	APlayerController* playerController = GetWorld()->GetFirstPlayerController();
+	// 캐릭터의 월드 좌표를 스크린 좌표로 변환합니다.
 	if (playerController->ProjectWorldLocationToScreen(character->GetActorLocation(), screenLocation))
 	{
 		int32 ViewportSizeX, ViewportSizeY;
 		playerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
 		screenLocation.X /= ViewportSizeX;
 		screenLocation.Y /= ViewportSizeY;
-
+		// 캐릭터가 화면 내에 존재하는지 검사합니다.
 		if (screenLocation.X >= 0.0f && screenLocation.X <= 1.0f &&
 			screenLocation.Y >= 0.0f && screenLocation.Y <= 1.0f)
 		{
-			// -1 ~ 1 사이로 범위를 확장합니다.
+			// 0~1 사이인 스크린 좌표를 -1~1 사이로 매핑합니다.
 			screenLocation = screenLocation * 2.0f - 1.0f;
-
+			// 캐릭터가 화면 내에 존재함을 알립니다.
 			outOfScreen = false;
 		}
 	}
@@ -375,17 +377,19 @@ bool UCharacterManagerComponent::CalcScreenDistance(
 	}
 	switch (fScreenQuery->DistanceFunction)
 	{
+		// 스크린 위치와 스크린 캐릭터 위치 사이의 거리를 구합니다.
 		case ECharacterManagerQueryScreenDistanceFunction::PointToPoint:
 		{
 			distance = FVector2D::Distance(screenLocation, fScreenQuery->Point);
 			return true;
 		}
-		break;
+		// 스크린 방향벡터와 스크린 캐릭터 위치와 내적합니다.
 		case ECharacterManagerQueryScreenDistanceFunction::Dot:
 		{
 			distance = FVector2D::DotProduct(screenDirection, screenLocation - fScreenQuery->Point);
 			return true;
 		}
+		// 스크린 방향벡터와 스크린 캐릭터 위치와 내적한 결과의 절대값을 반환합니다.
 		case ECharacterManagerQueryScreenDistanceFunction::DotAbs:
 		{
 			distance = FMath::Abs(FVector2D::DotProduct(screenDirection, screenLocation - fScreenQuery->Point));

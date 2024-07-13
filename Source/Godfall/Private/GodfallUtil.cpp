@@ -44,7 +44,9 @@ FVector GodfallUtil::Vector3D::Parabola(const FParabolaCoefficient3& coefficient
 	return FVector(x, y, z);
 }
 
-bool GodfallUtil::Vector2D::CalcParabolaCoefficient2(const FVector2D& p0, const FVector2D& p1, const FVector2D& p2, FParabolaCoefficient2& out)
+bool GodfallUtil::Vector2D::CalcParabolaCoefficient2(
+	const FVector2D& p0, const FVector2D& p1, const FVector2D& p2, 
+	FParabolaCoefficient2& out)
 {
 	const double& a = p1.X;
 	const double& b = p1.Y;
@@ -73,9 +75,9 @@ bool GodfallUtil::Vector2D::CalcParabolaCoefficient2(const FVector2D& p0, const 
 
 FVector2D GodfallUtil::Vector2D::Parabola(const FParabolaCoefficient2& coefficient, double x)
 {
-	const double& A = coefficient.A;
-	const double& B = coefficient.B;
-	const double& C = coefficient.C;
+	const double& A = coefficient.A; // ²ÀÁþÁ¡ÀÇ XÁÂÇ¥
+	const double& B = coefficient.B; // ²ÀÁþÁ¡ÀÇ YÁÂÇ¥
+	const double& C = coefficient.C; // Æ÷¹°¼±ÀÇ ³Êºñ
 	double y = C * (x - A) * (x - A) + B;
 	return FVector2D(x, y);
 }

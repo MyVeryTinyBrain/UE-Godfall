@@ -41,6 +41,7 @@ public:
 	UGodfallAnimNotifyStateBase();
 
 public:
+	// Begin, Tick, End이벤트가 발생하면 이 이름을 가진 함수를 호출합니다.
 	virtual FName GetFunctionName() const { return TEXT(""); }
 
 protected:

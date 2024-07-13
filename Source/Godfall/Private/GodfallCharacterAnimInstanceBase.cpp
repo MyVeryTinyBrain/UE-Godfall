@@ -181,13 +181,17 @@ bool UGodfallCharacterAnimInstanceBase::IsPlayingStunMontage() const
 	return Montage_IsPlaying(mStunMontage);
 }
 
-void UGodfallCharacterAnimInstanceBase::AnimNotifyState_CanComboInput(EAnimNotifyStateEvent eEvent, const UGodfallAnimNotifyStateBase* animNotifyState, const FAnimNotifiyStateData& data)
+void UGodfallCharacterAnimInstanceBase::AnimNotifyState_CanComboInput(
+	EAnimNotifyStateEvent eEvent, const UGodfallAnimNotifyStateBase* animNotifyState, 
+	const FAnimNotifiyStateData& data)
 {
 	switch (eEvent)
 	{
+		// 콤보 가능 구간 애니메이션 노티파이 스테이트가 시작되면, 플래그를 활성화합니다.
 		case EAnimNotifyStateEvent::Begin:
 			mCanComboInput = true;
 			break;
+			// 콤보 가능 구간 애니메이션 노티파이 스테이트가 종료되면, 플래그를 비활성화합니다.
 		case EAnimNotifyStateEvent::End:
 			mCanComboInput = false;
 			break;
